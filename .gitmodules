@@ -1,0 +1,9 @@
+[submodule "vendor/glm"]
+	path = vendor/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "vendor/tinyexr"]
+	path = vendor/tinyexr
+	url = https://github.com/syoyo/tinyexr.git
+[submodule "vendor/stb"]
+	path = vendor/stb
+	url = https://github.com/nothings/stb.git
