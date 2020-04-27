@@ -96,9 +96,9 @@ void naive(const std::array<Image, 6>& images)
     outImage.resize(width, height);
     for (int32_t pi = 0; pi < width * height; ++pi)
     {
-        for (auto& img : images)
+        for(int32_t layer=0; layer < images.size();++layer)
         {
-            outImage[pi] += img[pi];
+            outImage[pi] += images[layer][pi];
         }
     }
     outImage.saveHdr("out_naive.hdr");
@@ -108,9 +108,10 @@ void naive(const std::array<Image, 6>& images)
 void reweightingFirefly(const std::array<Image, 6>& images)
 {
     //
-    const float kappa = 32.0f;
+    const float kappa = 64.0f;
     const float cascadeBase = 8.0f;
     const float oneOverK = 1.0f / kappa;
+    const float N = 2048.0f;
     //
     const auto luminance = [](glm::vec4 c)
     {
@@ -120,22 +121,24 @@ void reweightingFirefly(const std::array<Image, 6>& images)
     const auto sampleLayer = [&](int32_t layer, glm::ivec2 xy, int r, float scale) -> glm::vec4
     {
         glm::vec4 val(0.0f);
+        auto& img = images[layer];
         int y = -r;
         for (int i = 0; i < 3; ++i) {
             int x = -r;
-            if ((x < 0) || (images[layer].width() <= x))
+            const int32_t iy = xy.y + y;
+            if ((iy < 0) || (img.height() <= iy))
             {
                 continue;
             }
 
             for (int j = 0; j < 3; ++j)
             {
-                if ((y < 0) || (images[layer].height() <= y))
+                const int32_t ix = xy.x + x;
+                if ((ix < 0) || (img.width() <= ix))
                 {
                     continue;
                 }
-
-                glm::vec4 c = images[layer](x, y);
+                glm::vec4 c = img[ix + iy * img.width()];
                 c *= scale;
                 val += c;
                 if (++x > r) break;
@@ -172,7 +175,7 @@ void reweightingFirefly(const std::array<Image, 6>& images)
             for (int32_t x = 0; x < width; ++x)
             {
                 // N/kappa / b^i_<curr>;
-                float currScale = float(2048) / (kappa * std::pow(cascadeBase, layer));
+                float currScale = N / (kappa * std::pow(cascadeBase, layer));
                 //
                 const glm::ivec2 xy(x, y);
                 /* sample counting-based reliability estimation */
@@ -189,7 +192,7 @@ void reweightingFirefly(const std::array<Image, 6>& images)
 
                 /* color-based reliability estimation */
 
-                float colorReliability = luminance(out(x, y)) * currScale;
+                float colorReliability = luminance(out[x+ out.width()* y]) * currScale;
 
                 // a minimum image brightness that we always consider reliable
                 colorReliability = std::max(colorReliability, 0.05f * currScale);
