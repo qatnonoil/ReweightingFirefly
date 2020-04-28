@@ -125,19 +125,10 @@ void reweightingFirefly(const std::array<Image, 6>& images)
         int y = -r;
         for (int i = 0; i < 3; ++i) {
             int x = -r;
-            const int32_t iy = xy.y + y;
-            if ((iy < 0) || (img.height() <= iy))
-            {
-                continue;
-            }
-
+            const int32_t iy = std::clamp(xy.y + y, 0, img.height() - 1);
             for (int j = 0; j < 3; ++j)
             {
-                const int32_t ix = xy.x + x;
-                if ((ix < 0) || (img.width() <= ix))
-                {
-                    continue;
-                }
+                const int32_t ix = std::clamp(xy.x + x, 0, img.width() - 1);
                 glm::vec4 c = img[ix + iy * img.width()];
                 c *= scale;
                 val += c;
@@ -154,7 +145,7 @@ void reweightingFirefly(const std::array<Image, 6>& images)
         glm::vec4 rel = sampleLayer(layer, xy, r, currScale);
         if (layer != 0)
             rel += sampleLayer(layer - 1, xy, r, currScale * cascadeBase);
-        if (layer != 5)
+        if (layer + 1 != images.size())
             rel += sampleLayer(layer + 1, xy, r, currScale / cascadeBase);
         return luminance(rel);
     };
